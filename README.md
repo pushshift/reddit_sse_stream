@@ -29,3 +29,23 @@ Get only comments from automoderator:
     curl --verbose --compressed 'http://stream.pushshift.io/?type=comments&author=automoderator'
 
 Notice: When connecting with compression. It generally takes a little bit of time before it gets started.  Also, only one connection per IP is supported.  If you need additional streams, please contact me.
+
+## Event Types:
+
+| Event        | Description | Currently Implemented |
+| ------------- |:-------------|:------------|
+| rc | A new Reddit comment in json format | Yes|
+| rs | A new Reddit submission in json format | Yes |
+| rr | A new Reddit subreddit in json format| No |
+| keepalive | A keepalive message (every 30 seconds)| Yes|
+
+## Keepalive Messages:
+
+Currently, a keepalive event is sent to the client every 30 seconds regardless if previous data was sent.  The keepalive event has the following information:
+
+| Key        | Value Description |
+| ------------- |:-------------|
+| tcs | Total Comments Sent
+| tss | Total Submissions Sent |
+| tbs | Total bytes sent (uncompressed)|
+
