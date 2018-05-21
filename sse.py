@@ -34,18 +34,36 @@ def test():
 def stream():
 
     if 'HTTP_X_FORWARDED_FOR' in request.environ:
-        REMOTE_IP = request.environ['HTTP_X_FORWARDED_FOR':
+        REMOTE_IP = request.environ['HTTP_X_FORWARDED_FOR']
     params = {}
     params['type'] = request.args.get('type')
     params['subreddit'] = request.args.get('subreddit')
     params['author'] = request.args.get('author')
+    params['comment_backfill'] = request.args.get('comment_backfill')
+    params['submission_backfill'] = request.args.get('submission_backfill')
 
     # Process Parameters by lowercasing all parameter and creating arrays for all parameters except 'type'
     for key in params:
         if params[key] is not None:
             params[key] = params[key].lower()
-            if key != 'type':
+            if key in ['subreddit','author']:
                 params[key] = set(params[key].split(","))
+            if key in ['submission_backfill','comment_backfill']:
+                params[key] = int(params[key])
+
+    # Restrict Backfill Amounts
+
+    if params['submission_backfill'] is not None:
+        if params['submission_backfill'] > 25000:
+            params['submission_backfill'] = 25000
+    else:
+        params['submission_backfill'] = 0
+
+    if params['comment_backfill'] is not None:
+        if params['comment_backfill'] > 100000:
+            params['comment_backfill'] = 100000
+    else:
+        params['comment_backfill'] = 0
 
     def eventStream():
 
@@ -60,16 +78,16 @@ def stream():
         pipe.get('rs:max_id')
 
         # How much backfill to send on new connections
-        COMMENT_HISTORY_AMOUNT = 2500
-        SUBMISSION_HISTORY_AMOUNT = 500
+        COMMENT_HISTORY_AMOUNT = params['comment_backfill']
+        SUBMISSION_HISTORY_AMOUNT = params['submission_backfill']
 
         rc_max_id,rs_max_id = pipe.execute()
         rc_max_id = int(rc_max_id) - COMMENT_HISTORY_AMOUNT
         rs_max_id = int(rs_max_id) - SUBMISSION_HISTORY_AMOUNT
 
         # How many new comments and submissions should we ask for each time?
-        com_buffer_size = 25
-        sub_buffer_size = 5
+        COM_BUFFER_SIZE = 25
+        SUB_BUFFER_SIZE = 10
 
         # How many times on average should we query Redis each second?
         # (Note, the multiple of the request size and how often we check should be larger than max Reddit Traffic ...
@@ -105,13 +123,13 @@ def stream():
                 yield output
                 last_sent = int(time.time())
             feed = []  # Feed will store everything we eventually want to send to the client
-            com_ids = [x for x in range(rc_max_id+1,rc_max_id+com_buffer_size+1)]
-            sub_ids = [x for x in range(rs_max_id+1,rs_max_id+sub_buffer_size+1)]
+            com_ids = [x for x in range(rc_max_id+1,rc_max_id + COM_BUFFER_SIZE + 1)]
+            sub_ids = [x for x in range(rs_max_id+1,rs_max_id + SUB_BUFFER_SIZE + 1)]
             for id in com_ids: pipe.hgetall('rc:id:' + str(id))
             for id in sub_ids: pipe.hgetall('rs:id:' + str(id))
             data = pipe.execute()
-            comments = data[:com_buffer_size]
-            submissions = data[-sub_buffer_size:]
+            comments = data[:COM_BUFFER_SIZE]
+            submissions = data[-SUB_BUFFER_SIZE:]
 
             for i, comment in enumerate(comments):
                 if comment:
@@ -193,4 +211,4 @@ def stream():
     return Response(eventStream(), mimetype="text/event-stream")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0',port=9000)
