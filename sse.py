@@ -4,7 +4,6 @@ from flask import Response, Flask, request
 from time import sleep
 import redis,hiredis
 import operator
-import ujson as json
 import time
 import math
 from collections import defaultdict
