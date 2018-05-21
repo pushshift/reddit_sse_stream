@@ -4,7 +4,6 @@ from flask import Response, Flask, request
 import redis,hiredis
 import operator
 import time
-from collections import defaultdict
 
 app = Flask(__name__)
 
