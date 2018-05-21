@@ -49,3 +49,10 @@ Currently, a keepalive event is sent to the client every 30 seconds regardless i
 | tss | Total Submissions Sent |
 | tbs | Total bytes sent (uncompressed)|
 
+## Python Consumer Example
+
+pip install sseclient (From this wonderful github: https://github.com/btubbs/sseclient)
+
+Take a look at the consumer_example.py file that shows how to interact with the stream using Python and sseclient.
+
+
