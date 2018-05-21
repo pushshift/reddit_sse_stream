@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
 from flask import Response, Flask, request
-from time import sleep
 import redis,hiredis
 import operator
 import time
-import math
 from collections import defaultdict
 
 app = Flask(__name__)
@@ -189,9 +187,9 @@ def stream():
             if wait < 0: wait = 0
 
             if submissions_were_full or comments_were_full:
-                sleep(.025)
+                time.sleep(.025)
             else:
-                sleep(wait)
+                time.sleep(wait)
 
     return Response(eventStream(), mimetype="text/event-stream")
 
