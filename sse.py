@@ -177,7 +177,7 @@ def stream():
                     if not whitelisted: continue
 
                     total_comments_sent += 1
-                    if params['type'] is None or params['type'].startswith('comment') or params['type'] == 'rc':
+                    if 'type' not in params or params['type'].startswith('comment') or params['type'] == 'rc':
                         feed.append((id,event,data,created_utc))
                 else:
                     comments_were_full = False
@@ -211,7 +211,7 @@ def stream():
                     if not whitelisted: continue
 
                     total_submissions_sent += 1
-                    if params['type'] is None or params['type'].startswith('submission') or params['type'] == 'rs':
+                    if 'type' not in params or params['type'].startswith('submission') or params['type'] == 'rs':
                         feed.append((id,event,data,created_utc))
                 else:
                     submissions_were_full = False
