@@ -196,9 +196,13 @@ def stream():
                     author = submission['author']
                     subreddit = submission['subreddit']
                     over_18 = submission['over_18']
+                    is_self = submission['is_self']
 
                     if 'over_18' in params:
                         if params['over_18'][0].lower() != over_18.lower(): continue
+
+                    if 'is_self' in params:
+                        if params['is_self'][0].lower() != is_self.lower(): continue
 
                     if 'author' in params:
                         if author in params['author']:
