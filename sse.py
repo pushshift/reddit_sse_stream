@@ -4,8 +4,15 @@ from flask import Response, Flask, request
 import redis,hiredis
 import operator
 import time
+import ujson as json
 
 app = Flask(__name__)
+
+def isInt(astring):
+    """ Is the given string an integer? """
+    try: int(astring)
+    except ValueError: return 0
+    else: return 1
 
 @app.route("/test")
 def test():
@@ -35,35 +42,40 @@ def stream():
 
     if 'HTTP_X_FORWARDED_FOR' in request.environ:
         REMOTE_IP = request.environ['HTTP_X_FORWARDED_FOR']
-    params = {}
-    params['type'] = request.args.get('type')
-    params['subreddit'] = request.args.get('subreddit')
-    params['author'] = request.args.get('author')
-    params['comment_backfill'] = request.args.get('comment_backfill')
-    params['submission_backfill'] = request.args.get('submission_backfill')
 
-    # Process Parameters by lowercasing all parameter and creating arrays for all parameters except 'type'
-    for key in params:
-        if params[key] is not None:
-            params[key] = params[key].lower()
-            if key in ['subreddit','author']:
-                params[key] = set(params[key].split(","))
-            if key in ['submission_backfill','comment_backfill']:
+    params = dict(request.args)
+
+    # Some error checking
+    if 'comment_backfill' in params and 'comment_start_id' in params:
+        return json.dumps({'error':'cannot use comment_backfill parameter and comment_start_id parameter at the same time'}), 400, {'ContentType':'application/json'}
+
+    if 'submission_backfill' in params and 'submission_start_id' in params:
+        return json.dumps({'error':'cannot use submission_backfill parameter and submission_start_id parameter at the same time'}), 400, {'ContentType':'application/json'}
+
+    # Process type parameter if present
+    if 'type' in params:
+        params['type'] = params['type'][0]
+
+    # Handle comment_backfill and submission_backfill Parameters
+    for key in ['comment_backfill','submission_backfill']:
+        if key in params:
+            params[key] = params[key][0]
+            if isInt(params[key]):
                 params[key] = int(params[key])
+                if params[key] > 100000: params[key] = 100000
+            else:
+                return json.dumps({'error':'comment_backfill and/or submission_backfill parameters should be an integer value'}), 400, {'ContentType':'application/json'}
+        else:
+            params[key] = 0
 
-    # Restrict Backfill Amounts
-
-    if params['submission_backfill'] is not None:
-        if params['submission_backfill'] > 25000:
-            params['submission_backfill'] = 25000
-    else:
-        params['submission_backfill'] = 0
-
-    if params['comment_backfill'] is not None:
-        if params['comment_backfill'] > 100000:
-            params['comment_backfill'] = 100000
-    else:
-        params['comment_backfill'] = 0
+    # Handle comment_start_id and submission_start_id Parameters if present
+    for key in ['comment_start_id','submission_start_id']:
+        if key in params:
+            params[key] = params[key][0]
+            if isInt(params[key]):
+                params[key] = int(params[key])
+            else:
+                return json.dumps({'error':'comment_start_id and/or submission_start_id parameters should be an integer value'}), 400, {'ContentType':'application/json'}
 
     def eventStream():
 
@@ -110,11 +122,18 @@ def stream():
         total_submissions_sent = 0
         total_bytes_sent = 0
 
+        # comment_start_id and submission_start_id take precedence over any other backfill or epoch start settings
+        if 'comment_start_id' in params:
+            rc_max_id = params['comment_start_id'] - 1
+        if 'submission_start_id' in params:
+            rs_max_id = params['submission_start_id'] - 1
+
         while True:
 
             begin_time = time.time()
             comments_were_full = True
             submissions_were_full = True
+
             # Do we need to send a keep alive signal?
             if int(time.time()) > last_sent + KEEP_ALIVE_INTERVAL:
                 keep_alive_id += 1
@@ -122,6 +141,7 @@ def stream():
                 total_bytes_sent += len(output)
                 yield output
                 last_sent = int(time.time())
+
             feed = []  # Feed will store everything we eventually want to send to the client
             com_ids = [x for x in range(rc_max_id+1,rc_max_id + COM_BUFFER_SIZE + 1)]
             sub_ids = [x for x in range(rs_max_id+1,rs_max_id + SUB_BUFFER_SIZE + 1)]
@@ -133,7 +153,7 @@ def stream():
 
             for i, comment in enumerate(comments):
                 if comment:
-                    if params['author'] is None and params['subreddit'] is None:
+                    if 'author' not in params and 'subreddit' not in params:
                         whitelisted = True
                     else:
                         whitelisted = False
@@ -146,11 +166,11 @@ def stream():
                     author = comment['author']
                     subreddit = comment['subreddit']
 
-                    if params['author'] is not None:
+                    if 'author' in params:
                         if author in params['author']:
                             whitelisted = True
 
-                    if params['subreddit'] is not None:
+                    if 'subreddit' in params:
                         if subreddit in params['subreddit']:
                             whitelisted = True
 
@@ -164,7 +184,7 @@ def stream():
 
             for i, submission in enumerate(submissions):
                 if submission:
-                    if params['author'] is None and params['subreddit'] is None:
+                    if 'author' not in params and 'subreddit' not in params:
                         whitelisted = True
                     else:
                         whitelisted = False
@@ -176,11 +196,11 @@ def stream():
                     author = submission['author']
                     subreddit = submission['subreddit']
 
-                    if params['author'] is not None:
+                    if 'author' in params:
                         if author in params['author']:
                             whitelisted = True
 
-                    if params['subreddit'] is not None:
+                    if 'subreddit' in params:
                         if subreddit in params['subreddit']:
                             whitelisted = True
 
