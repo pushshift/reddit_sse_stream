@@ -21,7 +21,7 @@ There is a caveat however -- SSE streams currently only work via http (no SSL). 
 | comment_backfill | Starts stream X comments ago (up to 100,000 submissions) | INT (1-100000) |
 | submission_start_id | Starts stream at specific comment ID (Used for continuation if stream is broken | INT |
 | comment_start_id | Starts stream at specific submission ID (Used for continuation if stream is broken) | INT |
-
+| over_18 | Restrict submissions in stream to NSFW or SFW content | Boolean (true or falue) |
 
 ## Examples:
 
