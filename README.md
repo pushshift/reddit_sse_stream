@@ -17,8 +17,11 @@ There is a caveat however -- SSE streams currently only work via http (no SSL). 
 | type        |  Restrict feed to a particular event type.  Leave out to receive all event types. | comments,submissions |
 | author      | Restrict to certain authors.  Separate multiple authors with a comma.      |   String |
 | submission  | Restrict to certain subreddits.  Separate multiple subreddits with a comma.       |    String |
-| submission_backfill | Starts stream X submissions ago (up to 25,000 submissions) | INT (1-25000)|
+| submission_backfill | Starts stream X submissions ago (up to 25,000 submissions) | INT (1-100000)|
 | comment_backfill | Starts stream X comments ago (up to 100,000 submissions) | INT (1-100000) |
+| submission_start_id | Starts stream at specific comment ID (Used for continuation if stream is broken | INT |
+| comment_start_id | Starts stream at specific submission ID (Used for continuation if stream is broken) | INT |
+
 
 ## Examples:
 
