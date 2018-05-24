@@ -223,7 +223,15 @@ def stream():
             if feed:
                 s = sorted(feed,key=lambda x: x[3])
                 for item in s:
-                    output = "id: {}\nevent: {}\ndata: {}\n\n".format(item[0],item[1],item[2])
+                    data = item[2]
+
+                    # Is the filter parameter present?  If so, let's only return the fields specified
+                    if 'filter' in params:
+                        filtered_keys = params['filter'][0].split(',')
+                        j = json.loads(item[2])
+                        data = json.dumps({k:v for k,v in j.items() if k in filtered_keys})
+
+                    output = "id: {}\nevent: {}\ndata: {}\n\n".format(item[0],item[1],data)
                     total_bytes_sent += len(output)
                     yield output
 
