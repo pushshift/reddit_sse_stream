@@ -23,6 +23,7 @@ There is a caveat however -- SSE streams currently only work via http (no SSL). 
 | comment_start_id | Starts stream at specific comment ID (Used for continuation if the stream is broken) | INT |
 | over_18 | Restrict submissions in stream to NSFW or SFW content | Boolean (true or false) |
 | is_self | Restrict submissions in stream to self posts or linked posts | Boolean (true or false) |
+| filter  | Restrict the returned JSON object to specific keys (comma-delimited for multiple values) | String |
 
 ## Examples:
 
