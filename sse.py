@@ -153,7 +153,7 @@ def stream():
 
             for i, comment in enumerate(comments):
                 if comment:
-                    if 'author' not in params and 'subreddit' not in params:
+                    if 'author' not in params and 'subreddit' not in params and 'domain' not in params:
                         whitelisted = True
                     else:
                         whitelisted = False
@@ -184,7 +184,7 @@ def stream():
 
             for i, submission in enumerate(submissions):
                 if submission:
-                    if 'author' not in params and 'subreddit' not in params:
+                    if 'author' not in params and 'subreddit' not in params and 'domain' not in params:
                         whitelisted = True
                     else:
                         whitelisted = False
@@ -195,6 +195,7 @@ def stream():
                     created_utc = submission['created_utc']
                     author = submission['author']
                     subreddit = submission['subreddit']
+                    if 'domain' in submission: domain = submission['domain'].lower()
                     over_18 = submission['over_18']
                     is_self = submission['is_self']
 
@@ -206,6 +207,10 @@ def stream():
 
                     if 'author' in params:
                         if author in params['author']:
+                            whitelisted = True
+
+                    if 'domain' in params:
+                        if domain in params['domain'][0].lower().split(','):
                             whitelisted = True
 
                     if 'subreddit' in params:
